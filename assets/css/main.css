@@ -1,0 +1,13 @@
+body,
+html {
+    background-color: #F5F5F5;
+    color: #000DC1;
+    font-family: "Cutive Mono", monospace;
+    font-weight: 400;
+    font-style: normal;
+}
+
+a {
+    color: currentColor;
+    text-decoration: underline;
+}
