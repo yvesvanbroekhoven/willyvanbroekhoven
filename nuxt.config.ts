@@ -15,8 +15,14 @@ export default defineNuxtConfig({
         {
           rel: 'stylesheet',
           href: 'https://fonts.googleapis.com/css2?family=Cutive+Mono&display=swap'
+        },
+        {
+          rel: 'icon',
+          type: 'image/x-icon',
+          href: '/favicon.png'
         }
-      ]
+      ],
+      title: 'Willy Van Broekhoven - Natuur fotografie',
     }
   },
   compatibilityDate: '2025-05-15',

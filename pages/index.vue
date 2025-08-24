@@ -1,26 +1,36 @@
 <template>
-  <h1>
-    <span>Willy </span>
-    <span>Van </span>
-    <span>Broekhoven</span>
-  </h1>
+  <div>
+    <div class="main-grid">
+      <header>
+        <h1>
+          <span>Willy </span>
+          <span>Van </span>
+          <span>Broekhoven</span>
+        </h1>
 
-  <h2>
-    <span>Natuur </span>
-    <span>Fotografie</span>
-  </h2>
+        <h2>
+          <span>Natuur </span>
+          <span>Fotografie</span>
+        </h2>
+      </header>
 
-  <NuxtLink
-      v-for="image in images"
-      :key="image.public_id"
-      :to="{ name: 'images-id', params: { id: image.public_id } }"
-  >
-    <picture>
-      <img
-          alt=""
-          :src="`https://res.cloudinary.com/dkx1f5edp/image/upload/f_auto,q_auto,w_512/v1748888379/${image.public_id}.jpg`" />
-    </picture>
-  </NuxtLink>
+      <NuxtLink
+          v-for="image in images"
+          :key="image.public_id"
+          :to="{ name: 'images-id', params: { id: image.public_id } }"
+      >
+        <picture>
+          <img
+              alt=""
+              :src="`https://res.cloudinary.com/dkx1f5edp/image/upload/f_auto,q_auto,w_512/v1748888379/${image.public_id}`" />
+        </picture>
+      </NuxtLink>
+    </div>
+
+    <footer>
+      Gemaakt door <NuxtLink to="https://yves.vanbroekhoven.dev">Yves</NuxtLink>
+    </footer>
+  </div>
 </template>
 
 <script setup lang="ts">
