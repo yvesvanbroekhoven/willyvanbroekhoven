@@ -1,6 +1,6 @@
 <template>
   <div class="image-detail">
-    <Transition :name="transitionName" mode="out-in">
+    <Transition :name="transitionName">
       <picture :key="image?.public_id">
         <img
             alt=""
@@ -38,15 +38,57 @@ if (error.value) {
   throw new Error(`Failed to fetch images: ${error.value.message}`)
 }
 
-const images = data.value?.resources ?? []
+const images = computed(() => data.value?.resources ?? [])
 
-const currentIndex = ref(-1)
-const direction = ref<'next' | 'prev' | null>(null)
+const imageIndex = computed(() => {
+  const publicId = route.params.id
 
-const image = computed(() => images[currentIndex.value] ?? null)
-const prevImage = computed(() => (currentIndex.value > 0 ? images[currentIndex.value - 1] : null))
+  if (typeof publicId !== 'string') {
+    return -1
+  }
+
+  return images.value.findIndex(img => img.public_id === publicId)
+})
+
+if (imageIndex.value === -1) {
+  throw new Error(`Image with public_id "${route.params.id as string}" not found`)
+}
+
+const previousIndex = useState<number | null>('image-detail-previous-index', () => null)
+const direction = useState<'next' | 'prev' | null>('image-detail-direction', () => null)
+
+watch(
+  imageIndex,
+  newIndex => {
+    if (newIndex === -1) {
+      direction.value = null
+      return
+    }
+
+    if (previousIndex.value === null || previousIndex.value === newIndex) {
+      direction.value = null
+    } else {
+      direction.value = newIndex > previousIndex.value ? 'next' : 'prev'
+    }
+
+    previousIndex.value = newIndex
+  },
+  { immediate: true }
+)
+
+onBeforeUnmount(() => {
+  direction.value = null
+  previousIndex.value = null
+})
+
+const image = computed(() => images.value[imageIndex.value] ?? null)
+
+const prevImage = computed(() =>
+  imageIndex.value > 0 ? images.value[imageIndex.value - 1] : null
+)
+
 const nextImage = computed(() =>
-  currentIndex.value < images.length - 1 ? images[currentIndex.value + 1] : null
+  imageIndex.value < images.value.length - 1 ? images.value[imageIndex.value + 1] : null
 )
 
 const transitionName = computed(() => {
@@ -60,37 +102,6 @@ const transitionName = computed(() => {
 
   return 'fade'
 })
-
-const updateIndex = (publicId: string, isInitial = false) => {
-  const newIndex = images.findIndex(img => img.public_id === publicId)
-
-  if (newIndex === -1) {
-    throw new Error(`Image with public_id "${publicId}" not found`)
-  }
-
-  if (!isInitial) {
-    if (newIndex === currentIndex.value) {
-      direction.value = null
-    } else {
-      direction.value = newIndex > currentIndex.value ? 'next' : 'prev'
-    }
-  }
-
-  currentIndex.value = newIndex
-}
-
-updateIndex(route.params.id as string, true)
-
-watch(
-  () => route.params.id,
-  newId => {
-    if (typeof newId !== 'string') {
-      return
-    }
-
-    updateIndex(newId)
-  }
-)
 </script>
 
 <style scoped>
@@ -132,10 +143,14 @@ watch(
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
-.slide-left-enter-from,
-.slide-left-leave-to {
+.slide-left-enter-from {
   opacity: 0;
   transform: translateX(40px);
+}
+
+.slide-left-leave-to {
+  opacity: 0;
+  transform: translateX(-40px);
 }
 
 .slide-left-leave-from,
@@ -144,10 +159,14 @@ watch(
   transform: translateX(0);
 }
 
-.slide-right-enter-from,
-.slide-right-leave-to {
+.slide-right-enter-from {
   opacity: 0;
   transform: translateX(-40px);
+}
+
+.slide-right-leave-to {
+  opacity: 0;
+  transform: translateX(40px);
 }
 
 .slide-right-leave-from,
