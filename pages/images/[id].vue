@@ -1,10 +1,12 @@
 <template>
   <div class="image-detail">
-    <picture>
-      <img
-          alt=""
-          :src="`https://res.cloudinary.com/dkx1f5edp/image/upload/f_auto,q_auto,w_2560/v1748888379/${image.public_id}.jpg`" />
-    </picture>
+    <Transition :name="transitionName" mode="out-in">
+      <picture :key="image?.public_id">
+        <img
+            alt=""
+            :src="`https://res.cloudinary.com/dkx1f5edp/image/upload/f_auto,q_auto,w_2560/v1748888379/${image?.public_id}.jpg`" />
+      </picture>
+    </Transition>
 
     <div class="image-detail__actions">
       <NuxtLink
@@ -30,7 +32,6 @@
 
 <script setup lang="ts">
 const route = useRoute()
-const publicId = route.params.id as string
 const { data, error } = await useFetch('/api/images')
 
 if (error.value) {
@@ -38,15 +39,58 @@ if (error.value) {
 }
 
 const images = data.value?.resources ?? []
-const index = images.findIndex(img => img.public_id === publicId)
 
-if (index === -1) {
-  throw new Error(`Image with public_id "${publicId}" not found`)
+const currentIndex = ref(-1)
+const direction = ref<'next' | 'prev' | null>(null)
+
+const image = computed(() => images[currentIndex.value] ?? null)
+const prevImage = computed(() => (currentIndex.value > 0 ? images[currentIndex.value - 1] : null))
+const nextImage = computed(() =>
+  currentIndex.value < images.length - 1 ? images[currentIndex.value + 1] : null
+)
+
+const transitionName = computed(() => {
+  if (direction.value === 'next') {
+    return 'slide-left'
+  }
+
+  if (direction.value === 'prev') {
+    return 'slide-right'
+  }
+
+  return 'fade'
+})
+
+const updateIndex = (publicId: string, isInitial = false) => {
+  const newIndex = images.findIndex(img => img.public_id === publicId)
+
+  if (newIndex === -1) {
+    throw new Error(`Image with public_id "${publicId}" not found`)
+  }
+
+  if (!isInitial) {
+    if (newIndex === currentIndex.value) {
+      direction.value = null
+    } else {
+      direction.value = newIndex > currentIndex.value ? 'next' : 'prev'
+    }
+  }
+
+  currentIndex.value = newIndex
 }
 
-const image = images[index]
-const prevImage = index > 0 ? images[index - 1] : null
-const nextImage = index < images.length - 1 ? images[index + 1] : null
+updateIndex(route.params.id as string, true)
+
+watch(
+  () => route.params.id,
+  newId => {
+    if (typeof newId !== 'string') {
+      return
+    }
+
+    updateIndex(newId)
+  }
+)
 </script>
 
 <style scoped>
@@ -77,5 +121,48 @@ const nextImage = index < images.length - 1 ? images[index + 1] : null
 
 .image-detail__link:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.slide-left-enter-active,
+.slide-left-leave-active,
+.slide-right-enter-active,
+.slide-right-leave-active,
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.slide-left-enter-from,
+.slide-left-leave-to {
+  opacity: 0;
+  transform: translateX(40px);
+}
+
+.slide-left-leave-from,
+.slide-left-enter-to {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.slide-right-enter-from,
+.slide-right-leave-to {
+  opacity: 0;
+  transform: translateX(-40px);
+}
+
+.slide-right-leave-from,
+.slide-right-enter-to {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.fade-enter-to,
+.fade-leave-from {
+  opacity: 1;
 }
 </style>
