@@ -1,9 +1,9 @@
 <template>
   <div class="image-detail">
-    <picture>
+    <picture :key="image?.public_id">
       <img
           alt=""
-          :src="`https://res.cloudinary.com/dkx1f5edp/image/upload/f_auto,q_auto,w_2560/v1748888379/${image.public_id}.jpg`" />
+          :src="`https://res.cloudinary.com/dkx1f5edp/image/upload/f_auto,q_auto,w_2560/v1748888379/${image?.public_id}.jpg`" />
     </picture>
 
     <div class="image-detail__actions">
@@ -30,23 +30,84 @@
 
 <script setup lang="ts">
 const route = useRoute()
-const publicId = route.params.id as string
 const { data, error } = await useFetch('/api/images')
 
 if (error.value) {
   throw new Error(`Failed to fetch images: ${error.value.message}`)
 }
 
-const images = data.value?.resources ?? []
-const index = images.findIndex(img => img.public_id === publicId)
+const images = computed(() => data.value?.resources ?? [])
 
-if (index === -1) {
-  throw new Error(`Image with public_id "${publicId}" not found`)
+const imageIndex = computed(() => {
+  const publicId = route.params.id
+
+  if (typeof publicId !== 'string') {
+    return -1
+  }
+
+  return images.value.findIndex(img => img.public_id === publicId)
+})
+
+if (imageIndex.value === -1) {
+  throw new Error(`Image with public_id "${route.params.id as string}" not found`)
 }
 
-const image = images[index]
-const prevImage = index > 0 ? images[index - 1] : null
-const nextImage = index < images.length - 1 ? images[index + 1] : null
+const previousIndex = useState<number | null>('image-detail-previous-index', () => null)
+const direction = useState<'next' | 'prev' | null>('image-detail-direction', () => null)
+
+watch(
+  imageIndex,
+  newIndex => {
+    if (newIndex === -1) {
+      direction.value = null
+      return
+    }
+
+    if (previousIndex.value === null || previousIndex.value === newIndex) {
+      direction.value = null
+    } else {
+      direction.value = newIndex > previousIndex.value ? 'next' : 'prev'
+    }
+
+    previousIndex.value = newIndex
+  },
+  { immediate: true }
+)
+
+onBeforeUnmount(() => {
+  direction.value = null
+  previousIndex.value = null
+})
+
+const image = computed(() => images.value[imageIndex.value] ?? null)
+
+const prevImage = computed(() =>
+  imageIndex.value > 0 ? images.value[imageIndex.value - 1] : null
+)
+
+const nextImage = computed(() =>
+  imageIndex.value < images.value.length - 1 ? images.value[imageIndex.value + 1] : null
+)
+
+const transitionName = computed(() => {
+  if (direction.value === 'next') {
+    return 'slide-left'
+  }
+
+  if (direction.value === 'prev') {
+    return 'slide-right'
+  }
+
+  return 'fade'
+})
+
+const pageTransition = computed(() => ({
+  name: transitionName.value
+}))
+
+definePageMeta({
+  pageTransition
+})
 </script>
 
 <style scoped>
@@ -77,5 +138,56 @@ const nextImage = index < images.length - 1 ? images[index + 1] : null
 
 .image-detail__link:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.slide-left-enter-active,
+.slide-left-leave-active,
+.slide-right-enter-active,
+.slide-right-leave-active,
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.slide-left-enter-from {
+  opacity: 0;
+  transform: translateX(40px);
+}
+
+.slide-left-leave-to {
+  opacity: 0;
+  transform: translateX(-40px);
+}
+
+.slide-left-leave-from,
+.slide-left-enter-to {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.slide-right-enter-from {
+  opacity: 0;
+  transform: translateX(-40px);
+}
+
+.slide-right-leave-to {
+  opacity: 0;
+  transform: translateX(40px);
+}
+
+.slide-right-leave-from,
+.slide-right-enter-to {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.fade-enter-to,
+.fade-leave-from {
+  opacity: 1;
 }
 </style>
