@@ -1,12 +1,10 @@
 <template>
   <div class="image-detail">
-    <Transition :name="transitionName">
-      <picture :key="image?.public_id">
-        <img
-            alt=""
-            :src="`https://res.cloudinary.com/dkx1f5edp/image/upload/f_auto,q_auto,w_2560/v1748888379/${image?.public_id}.jpg`" />
-      </picture>
-    </Transition>
+    <picture :key="image?.public_id">
+      <img
+          alt=""
+          :src="`https://res.cloudinary.com/dkx1f5edp/image/upload/f_auto,q_auto,w_2560/v1748888379/${image?.public_id}.jpg`" />
+    </picture>
 
     <div class="image-detail__actions">
       <NuxtLink
@@ -101,6 +99,14 @@ const transitionName = computed(() => {
   }
 
   return 'fade'
+})
+
+const pageTransition = computed(() => ({
+  name: transitionName.value
+}))
+
+definePageMeta({
+  pageTransition
 })
 </script>
 
